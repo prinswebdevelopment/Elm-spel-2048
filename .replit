@@ -1,0 +1,6 @@
+run="elm-live src/Main.elm -h 0.0.0.0 --pushstate"
+
+[[ports]]
+localPort = 8000
+externalPort = 80
+exposeLocalhost = true
