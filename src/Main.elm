@@ -11,9 +11,9 @@ import List exposing (reverse)
 
 -- MAIN
 
-
+main : Program () Model Msg
 main =
-    Browser.sandbox { init = init, update = update, view = view }
+    Browser.element { init = init, update = update, view = view, subscriptions = subs }
 
 
 
@@ -22,12 +22,15 @@ main =
 
 type alias Model =
     { gameState : Array Int
+    ,  score : Int
     }
 
 
-init : Model
-init =
-    { gameState = fromList [ 0, 0, 2, 0, 2, 4, 4, 0, 4 ] }
+init : flags -> (Model, Cmd Msg)
+init flags =
+    ({ gameState = fromList [ 0, 0, 2, 0, 2, 4, 4, 0, 4 ] 
+    , score = 0
+    },  Cmd.none)
 
 
 
@@ -41,53 +44,63 @@ type Msg
     | Down
 
 
-update : Msg -> Model -> Model
+update : Msg -> Model -> (Model, Cmd Msg)
+
 update msg model =
+  case msg of
+    other -> (updateHelper msg model, Cmd.none)
+
+updateModel (newGameState, newScore) model =
+  { model | gameState = newGameState, score = model.score + newScore }
+  
+
+updateHelper msg model =
     case msg of
         Left ->
-            { model | gameState = moveLeft model.gameState }
+            updateModel (moveLeft model.gameState) model
 
         Right ->
-            { model | gameState = moveRight model.gameState }
+            updateModel (moveRight model.gameState) model
 
         Up ->
-            { model | gameState = moveUp model.gameState }
+            updateModel (moveUp model.gameState) model
 
         Down ->
-            { model | gameState = moveDown model.gameState }
+            updateModel (moveDown model.gameState) model
 
 
-moveLeft : Array Int -> Array Int
+moveLeft : Array Int -> (Array Int, Int)
 moveLeft gs =
     let
-        row1 =
-            slice 0 3 gs
+        (row1, sc1) =
+            pushRow (slice 0 3 gs) 0
 
-        row2 =
-            slice 3 6 gs
+        (row2, sc2) =
+            pushRow (slice 3 6 gs) 0
 
-        row3 =
-            slice 6 9 gs
+        (row3, sc3) =
+            pushRow (slice 6 9 gs) 0
+            
     in
-    append (pushRow row1) (append (pushRow row2) (pushRow row3))
+    (append row1 (append row2 row3), (sc1 + sc2 + sc3))
 
 
-moveRight : Array Int -> Array Int
+moveRight : Array Int -> (Array Int, Int)
 moveRight gs =
     let
-        row1 =
-            fromList (reverse (toList (slice 0 3 gs)))
+        (row1, sc1) =
+            pushRow (fromList (reverse (toList (slice 0 3 gs)))) 0
 
-        row2 =
-            fromList (reverse (toList (slice 3 6 gs)))
+        (row2, sc2) =
+            pushRow (fromList (reverse (toList (slice 3 6 gs)))) 0
 
-        row3 =
-            fromList (reverse (toList (slice 6 9 gs)))
+        (row3, sc3) =
+            pushRow (fromList (reverse (toList (slice 6 9 gs)))) 0
     in
-    append (fromList (reverse (toList (pushRow row1)))) (append (fromList (reverse (toList (pushRow row2)))) (fromList (reverse (toList (pushRow row3)))))
+    (append (fromList (reverse (toList (row1)))) (append (fromList (reverse (toList (row2)))) (fromList (reverse (toList (row3))))), (sc1 + sc2 + sc3))
 
 
-moveUp : Array Int -> Array Int
+moveUp : Array Int -> (Array Int, Int)
 moveUp gs =
     let
         row1 =
@@ -99,13 +112,13 @@ moveUp gs =
         row3 =
             fromList [ getInt 2 gs, getInt 5 gs, getInt 8 gs ]
 
-        result =
+        (result, sc) =
             moveLeft (append row1 (append row2 row3))
     in
-    fromList [ getInt 0 result, getInt 3 result, getInt 6 result, getInt 1 result, getInt 4 result, getInt 7 result, getInt 2 result, getInt 5 result, getInt 8 result ]
+    (fromList [ getInt 0 result, getInt 3 result, getInt 6 result, getInt 1 result, getInt 4 result, getInt 7 result, getInt 2 result, getInt 5 result, getInt 8 result ], sc)
 
 
-moveDown : Array Int -> Array Int
+moveDown : Array Int -> (Array Int, Int)
 moveDown gs =
     let
         row1 =
@@ -117,14 +130,14 @@ moveDown gs =
         row3 =
             fromList [ getInt 2 gs, getInt 5 gs, getInt 8 gs ]
 
-        result =
+        (result, sc) =
             moveRight (append row1 (append row2 row3))
     in
-    fromList [ getInt 0 result, getInt 3 result, getInt 6 result, getInt 1 result, getInt 4 result, getInt 7 result, getInt 2 result, getInt 5 result, getInt 8 result ]
+    (fromList [ getInt 0 result, getInt 3 result, getInt 6 result, getInt 1 result, getInt 4 result, getInt 7 result, getInt 2 result, getInt 5 result, getInt 8 result ], sc)
 
 
-pushRow : Array Int -> Array Int
-pushRow row =
+pushRow : Array Int -> Int -> (Array Int, Int)
+pushRow row sc =
     let
         x1 =
             getInt 0 row
@@ -136,21 +149,27 @@ pushRow row =
             getInt 2 row
     in
     if x1 + x2 + x3 == 0 then
-        row
+        (row, sc)
 
     else if x1 == 0 then
-        pushRow (append (fromList [ x2 ]) (fromList [ x3, 0 ]))
+        pushRow (append (fromList [ x2 ]) (fromList [ x3, 0 ])) sc
 
     else if x1 == x2 then
-        pushRow (append (repeat 1 (x1 + x2)) (fromList [ x3, 0 ]))
+        pushRow (append (repeat 1 (x1 + x2)) (fromList [ x3, 0 ])) (sc + x1 + x2)
+        
 
     else if x2 == x3 then
-        append (fromList [ x1 ]) (fromList [ x2 + x3, 0 ])
+        (append (fromList [ x1 ]) (fromList [ x2 + x3, 0 ]), (sc + x2 + x3))
 
     else
-        row
+        (row, sc)
 
 
+-- SUBS
+
+subs : Model -> Sub Msg
+subs model =
+    Sub.none
 
 -- VIEW
 
@@ -183,6 +202,7 @@ view model =
                 , button [ onClick Down ] [ text "Down" ]
                 ]
             ]
+            , div [][text (String.fromInt model.score)]
         ]
 
 
