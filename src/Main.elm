@@ -6,6 +6,7 @@ import Html exposing (Attribute, Html, button, div, input, span, text)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onClick)
 import List exposing (reverse)
+import Random
 
 
 
@@ -42,13 +43,20 @@ type Msg
     | Right
     | Up
     | Down
+    | Generated Int Int
+    | GeneratedPos Int
 
 
 update : Msg -> Model -> (Model, Cmd Msg)
-
 update msg model =
   case msg of
+    Left -> (updateHelper msg model, Random.generate (\x -> GeneratedPos x) (Random.int 1 9))
+    Right -> (updateHelper msg model, Random.generate (\x -> GeneratedPos x) (Random.int 1 9))
+    Up -> (updateHelper msg model, Random.generate (\x -> GeneratedPos x) (Random.int 1 9))
+    Down -> (updateHelper msg model, Random.generate (\x -> GeneratedPos x) (Random.int 1 9))
+    GeneratedPos pos -> (updateHelper msg model, Random.generate (\x -> Generated x pos) (Random.int 1 9))
     other -> (updateHelper msg model, Cmd.none)
+
 
 updateModel (newGameState, newScore) model =
   { model | gameState = newGameState, score = model.score + newScore }
@@ -67,7 +75,32 @@ updateHelper msg model =
 
         Down ->
             updateModel (moveDown model.gameState) model
+            
+        Generated new pos ->
+            { model | gameState = add new pos model.gameState }
 
+        GeneratedPos new ->
+            model
+
+getZeroPos : Int -> Array Int -> Int -> Int
+getZeroPos pos gs count = 
+  if count < 9 then
+    if Maybe.withDefault -1 (get pos gs) == 0 then 
+      pos 
+    else 
+      getZeroPos (if pos - 1 == -1 then 9 else pos - 1) gs (count + 1)
+  else
+    -1
+
+add : Int -> Int -> Array Int -> Array Int
+add new pos gs =
+  let
+    changePos = getZeroPos pos gs 0
+  in
+    if new < 9 then 
+      set changePos 2 gs
+    else
+      set changePos 4 gs
 
 moveLeft : Array Int -> (Array Int, Int)
 moveLeft gs =
