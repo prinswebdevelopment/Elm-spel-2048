@@ -58,34 +58,39 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     let
         gsLength =
-            length model.gameState
+            (length model.gameState) - 1
     in
     if model.run == True then
         case msg of
           Left ->
-              ( updateHelper msg model, Random.generate GeneratedPos (Random.int 1 gsLength) )
+              ( updateHelper msg model, Random.generate GeneratedPos (Random.int 0 gsLength) )
   
           Right ->
-              ( updateHelper msg model, Random.generate GeneratedPos (Random.int 1 gsLength) )
+              ( updateHelper msg model, Random.generate GeneratedPos (Random.int 0 gsLength) )
   
           Up ->
-              ( updateHelper msg model, Random.generate GeneratedPos (Random.int 1 gsLength) )
+              ( updateHelper msg model, Random.generate GeneratedPos (Random.int 0 gsLength) )
   
           Down ->
-              ( updateHelper msg model, Random.generate GeneratedPos (Random.int 1 gsLength) )
+              ( updateHelper msg model, Random.generate GeneratedPos (Random.int 0 gsLength) )
   
           Generated new pos ->
-              if length (filter (\x -> x == 0) model.gameState) == gsLength then
-                ( updateHelper msg model, Random.generate GeneratedPos (Random.int 1 gsLength) )
+              if length (filter (\x -> x == 0) model.gameState) == (gsLength + 1) then
+                ( updateHelper msg model, Random.generate GeneratedPos (Random.int 0 gsLength) )
               else if length (filter (\x -> x >= 2048) model.gameState) > 0 then
                 ( stopRun (updateHelper msg model) " You win!", Cmd.none )
-              else if length (filter (\x -> x == 0) model.gameState) == 0 then
-                ( stopRun (updateHelper msg model) " You lose!", Cmd.none )
               else
                 ( updateHelper msg model, Cmd.none )
               
           GeneratedPos pos ->
-              ( updateHelper msg model, Random.generate (\x -> Generated x pos) (Random.int 1 gsLength) )
+            if getInt pos model.gameState == 0 then
+              ( updateHelper msg model, Random.generate (\x -> Generated x pos) (Random.int 1 10) )
+            else
+              if length (filter (\x -> x == 0) model.gameState) > 0 then
+                ( model, Random.generate GeneratedPos (Random.int 0 gsLength) )
+              else
+                ( stopRun (updateHelper msg model) " You lose!", Cmd.none )
+              
       else
         (model, Cmd.none)
 
@@ -120,38 +125,12 @@ stopRun : Model -> String -> Model
 stopRun model message = 
   { model | message = message, run = False }
 
-getZeroPos : Int -> Array Int -> Int -> Int
-getZeroPos pos gs count =
-    if count < length gs then
-        if getInt pos gs == 0 then
-            pos
-
-        else
-            getZeroPos
-                (if pos - 1 == -1 then
-                    length gs
-
-                 else
-                    pos - 1
-                )
-                gs
-                (count + 1)
-
-    else
-        -1
-
-
 add : Int -> Int -> Array Int -> Array Int
 add new pos gs =
-    let
-        changePos =
-            getZeroPos pos gs 0
-    in
-    if new < length gs then
-        set changePos 2 gs
-
+    if new < 10 then
+        set pos 2 gs
     else
-        set changePos 4 gs
+        set pos 4 gs
 
 
 moveLeft : Array Int -> ( Array Int, Int )
