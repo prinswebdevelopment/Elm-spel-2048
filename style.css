@@ -7,24 +7,41 @@ body {
   height: 100vh;
 }
 
+.score {
+  height: 20%;
+  width: 100%;
+  display: flex;
+  justify-content: space-around;
+}
+
+.score div {
+  background-color: rgb(255, 128, 128, 0.35);
+  width: 20%;
+  border-radius: 10px;
+  font-size: 20px;
+  text-align: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: bold;
+  margin-bottom: 20px;
+}
+
 .game {
   width: 50vw;
   height: 50vh;
   background-color: #776e65;
   border-radius: 20px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  padding: 5px;
 }
 
 .rows {
-  margin-top: 5%;
   height: 100%;
   width: 100%;
 }
 
 .row {
-  height: 25%;
+  height: 20%;
   width: 100%;
   display: flex;
   justify-content: space-around;

@@ -25,15 +25,19 @@ main =
 type alias Model =
     { gameState : Array Int
     , score : Int
+    , message : String
+    , run : Bool
     }
 
 
 init : flags -> ( Model, Cmd Msg )
 init flags =
-    ( { gameState = fromList [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 0 ]
+    ( { gameState = fromList [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
       , score = 0
+      , message = ""
+      , run = True
       }
-    , Cmd.none
+    , Random.generate GeneratedPos (Random.int 1 16) 
     )
 
 
@@ -56,30 +60,42 @@ update msg model =
         gsLength =
             length model.gameState
     in
-    case msg of
-        Left ->
-            ( updateHelper msg model, Random.generate GeneratedPos (Random.int 1 gsLength) )
+    if model.run == True then
+        case msg of
+          Left ->
+              ( updateHelper msg model, Random.generate GeneratedPos (Random.int 1 gsLength) )
+  
+          Right ->
+              ( updateHelper msg model, Random.generate GeneratedPos (Random.int 1 gsLength) )
+  
+          Up ->
+              ( updateHelper msg model, Random.generate GeneratedPos (Random.int 1 gsLength) )
+  
+          Down ->
+              ( updateHelper msg model, Random.generate GeneratedPos (Random.int 1 gsLength) )
+  
+          Generated new pos ->
+              if length (filter (\x -> x == 0) model.gameState) == gsLength then
+                ( updateHelper msg model, Random.generate GeneratedPos (Random.int 1 gsLength) )
+              else if length (filter (\x -> x >= 2048) model.gameState) > 0 then
+                ( stopRun (updateHelper msg model) " You win!", Cmd.none )
+              else if length (filter (\x -> x == 0) model.gameState) == 0 then
+                ( stopRun (updateHelper msg model) " You lose!", Cmd.none )
+              else
+                ( updateHelper msg model, Cmd.none )
+              
+          GeneratedPos pos ->
+              ( updateHelper msg model, Random.generate (\x -> Generated x pos) (Random.int 1 gsLength) )
+      else
+        (model, Cmd.none)
 
-        Right ->
-            ( updateHelper msg model, Random.generate GeneratedPos (Random.int 1 gsLength) )
 
-        Up ->
-            ( updateHelper msg model, Random.generate GeneratedPos (Random.int 1 gsLength) )
-
-        Down ->
-            ( updateHelper msg model, Random.generate GeneratedPos (Random.int 1 gsLength) )
-
-        GeneratedPos pos ->
-            ( updateHelper msg model, Random.generate (\x -> Generated x pos) (Random.int 1 gsLength) )
-
-        other ->
-            ( updateHelper msg model, Cmd.none )
-
-
+updateModel : (Array Int, Int) -> Model -> Model
 updateModel ( newGameState, newScore ) model =
     { model | gameState = newGameState, score = model.score + newScore }
 
 
+updateHelper : Msg -> Model -> Model
 updateHelper msg model =
     case msg of
         Left ->
@@ -100,6 +116,9 @@ updateHelper msg model =
         GeneratedPos new ->
             model
 
+stopRun : Model -> String -> Model
+stopRun model message = 
+  { model | message = message, run = False }
 
 getZeroPos : Int -> Array Int -> Int -> Int
 getZeroPos pos gs count =
@@ -288,7 +307,10 @@ subs model =
 view : Model -> Html Msg
 view model =
     div [ class "game" ]
-        [ div [ class "rows" ]
+        [ div [ class "score "] 
+          [ div [] [ text ((String.fromInt model.score) ++ model.message) ]
+          ]
+        , div [ class "rows" ]
             [ div [ class "row row1" ]
                 [ getGameSquare 0 model.gameState
                 , getGameSquare 1 model.gameState
@@ -322,7 +344,7 @@ view model =
                 , button [ onClick Down ] [ text "Down" ]
                 ]
             ]
-        , div [] [ text (String.fromInt model.score) ]
+        
         ]
 
 
