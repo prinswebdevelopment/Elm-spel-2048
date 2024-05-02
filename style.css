@@ -1,3 +1,4 @@
+/* you can style your program here */
 body {
   background-color: #faf8ef;
   display: flex;
@@ -23,7 +24,7 @@ body {
 }
 
 .row {
-  height: 30%;
+  height: 25%;
   width: 100%;
   display: flex;
   justify-content: space-around;
@@ -31,8 +32,7 @@ body {
 
 .row span {
   background-color: rgba(238, 228, 218, 0.35);
-  height: 80%;
-  width: 30%;
+  width: 20%;
   border-radius: 10px;
   font-size: 20px;
   text-align: center;
@@ -40,6 +40,7 @@ body {
   justify-content: center;
   align-items: center;
   font-weight: bold;
+  margin-bottom: 20px;
 }
 
 .buttons {
@@ -54,5 +55,6 @@ body {
 }
 
 .number {
+
   background-color: #eee4da !important;
 }
